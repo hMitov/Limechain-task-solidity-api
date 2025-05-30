@@ -10,7 +10,7 @@ import { ForbiddenException, BadRequestException } from '@nestjs/common';
 // Mock ethers
 jest.mock('ethers', () => ({
   ethers: {
-    JsonRpcProvider: jest.fn().mockImplementation(() => ({
+    WebSocketProvider: jest.fn().mockImplementation(() => ({
       getNetwork: jest.fn().mockResolvedValue({ chainId: 1 }),
     })),
     Wallet: jest.fn().mockImplementation(() => ({
@@ -60,7 +60,7 @@ describe('ContractService', () => {
     mockConfigService = {
       get: jest.fn((key: string) => {
         const config = {
-          RPC_URL: 'http://localhost:8545',
+          WS_URL: 'http://localhost:8545',
           PRIVATE_KEY: '0x1234567890123456789012345678901234567890123456789012345678901234',
           NFT_ADDRESS: '0x1234567890123456789012345678901234567890',
           AUCTION_FACTORY: '0x1234567890123456789012345678901234567890',

@@ -11,7 +11,7 @@ import * as myNftAbi from '../ABI/MyNFT.json';
 @Injectable()
 export class ContractService {
   private readonly logger = new Logger(ContractService.name);
-  private provider: ethers.JsonRpcProvider;
+  private provider: ethers.WebSocketProvider;
   private wallet: ethers.Wallet;
   private myNFT: ethers.Contract;
   private auction: ethers.Contract;
@@ -23,12 +23,15 @@ export class ContractService {
     @InjectRepository(NftEntity) private nftRepo: Repository<NftEntity>,
     @InjectRepository(AuctionEntity) private auctionRepo: Repository<AuctionEntity>
   ) {
-    const rpcUrl = this.configService.get<string>('RPC_URL');
+    const rpcUrl = this.configService.get<string>('WS_URL');
     const privateKey = this.configService.get<string>('PRIVATE_KEY');
     const nftAddress = this.configService.get<string>('NFT_CONTRACT');
     const auctionAddress = this.configService.get<string>('AUCTION_FACTORY');
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    if (!rpcUrl) {
+      throw new Error('Missing WS RPC URL');
+    }
+    this.provider = new ethers.WebSocketProvider(rpcUrl);
     this.wallet = new ethers.Wallet(privateKey!, this.provider);
 
     this.myNFT = new ethers.Contract(nftAddress!, myNftAbi.abi, this.wallet);

@@ -73,7 +73,7 @@ This service provides a bridge between NFT smart contracts on the blockchain and
 ## Configuration
 
 The service requires the following environment variables:
-- `RPC_URL`: Blockchain node RPC endpoint
+- `WS_URL`: Blockchain node Web socket endpoint
 - `PRIVATE_KEY`: Private key for contract interactions
 - `NFT_CONTRACT`: Address of the NFT contract
 - `AUCTION_FACTORY`: Address of the auction factory contract
@@ -103,7 +103,7 @@ The service requires the following environment variables:
 
 3. Set up environment variables in `.env`:
    ```
-   RPC_URL=your_ethereum_node_url
+   WS_URL=your_ethereum_node_url
    PRIVATE_KEY=your_private_key
    POSTGRES_HOST=localhost
    POSTGRES_PORT=5432
