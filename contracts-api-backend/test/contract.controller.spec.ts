@@ -197,7 +197,10 @@ describe('ContractController', () => {
 
     it('should throw BadRequestException when fields are missing', async () => {
       await expect(async () => {
-        await controller.updateNftPublicPrice({} as any);
+        await controller.updateNftPublicPrice({} as {
+          callerAddress: string;
+          pricePublic: string;
+        });
       }).rejects.toThrow(new BadRequestException('Missing required fields'));
     });
 
@@ -230,7 +233,10 @@ describe('ContractController', () => {
 
     it('should throw BadRequestException when fields are missing', async () => {
       await expect(async () => {
-        await controller.updateNftPrivatePrice({} as any);
+        await controller.updateNftPrivatePrice({} as {
+          callerAddress: string;
+          pricePrivate: string;
+        });
       }).rejects.toThrow(new BadRequestException('Missing required fields'));
     });
 

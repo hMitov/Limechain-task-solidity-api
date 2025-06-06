@@ -1,8 +1,8 @@
 export class PersistenceError extends Error {
   cause: unknown;
-  constructor(operation: string, entity: string, originalError: unknown) {
+  constructor(operation: string, originalError: unknown) {
     super(
-      `Failed to ${operation} ${entity} | Reason: ${(originalError as Error)?.message}`,
+      `Failed to ${operation} | Reason: ${(originalError as Error)?.message}`,
     );
     this.name = 'PersistenceError';
     this.cause = originalError;

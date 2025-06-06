@@ -13,6 +13,7 @@ import { AuctionListenerError } from '../errors/AuctionListenerError';
 import { ProviderConnectionError } from '../errors/ProviderConnectionError';
 import { PersistenceError } from '../errors/PersistenceError';
 import { AuctionEventInputsValidator } from '../utls/AuctionEventInputsValidator';
+import { AUCTION_EVENTS, OPERATIONS, CONFIG_KEYS } from '../../constants/auction.constants';
 
 @Injectable()
 export class ContractListenerService implements OnApplicationBootstrap {
@@ -25,31 +26,6 @@ export class ContractListenerService implements OnApplicationBootstrap {
   private auctionFactory: ethers.Contract;
   private readonly DELAY_MS = 1000;
 
-  private readonly WS_URL = 'WS_URL';
-  private readonly NFT_CONTRACT = 'NFT_CONTRACT';
-  private readonly AUCTION_FACTORY = 'AUCTION_FACTORY';
-
-  private readonly OPERATION_PERSIST = 'persist';
-  private readonly OPERATION_PRUNE = 'prune';
-
-  private readonly ENTITY_USER = 'User';
-  private readonly ENTITY_NFT = 'NFT';
-  private readonly ENTITY_AUCTION = 'Auction';
-
-  private readonly EVENT_TRANSFER = 'Transfer';
-  private readonly EVENT_AUCTION_CREATED = 'AuctionCreated';
-  private readonly EVENT_BID_PLACED = 'BidPlaced';
-  private readonly EVENT_AUCTION_ENDED = 'AuctionEnded';
-  private readonly EVENT_AUCTION_STARTED = 'AuctionStarted';
-  private readonly EVENT_AUCTION_CANCELLED = 'AuctionCancelled';
-  private readonly EVENT_AUCTION_EXTENDED = 'AuctionExtended';
-
-  private readonly MSG_LISTENERS_STARTED =
-    'Event listeners started using WebSocket provider';
-  private readonly MSG_CONNECT_ERROR = 'Failed to connect to provider:';
-  private readonly MSG_NFT_TRANSFER = 'NFT Transfer | Token';
-  private readonly MSG_NFT_MINTED = 'NFT Minted | Token';
-
   constructor(
     private configService: ConfigService,
     @InjectRepository(NftEntity) private nftRepo: Repository<NftEntity>,
@@ -57,11 +33,9 @@ export class ContractListenerService implements OnApplicationBootstrap {
     private auctionRepo: Repository<AuctionEntity>,
     @InjectRepository(UserEntity) private userRepo: Repository<UserEntity>,
   ) {
-    const wsUrl = this.configService.get<string>(this.WS_URL)!;
-    const nftAddress = this.configService.get<string>(this.NFT_CONTRACT)!;
-    const auctionAddress = this.configService.get<string>(
-      this.AUCTION_FACTORY,
-    )!;
+    const wsUrl = this.configService.get<string>(CONFIG_KEYS.WS_URL)!;
+    const nftAddress = this.configService.get<string>(CONFIG_KEYS.NFT_CONTRACT)!;
+    const auctionAddress = this.configService.get<string>(CONFIG_KEYS.AUCTION_FACTORY)!;
 
     this.provider = new ethers.WebSocketProvider(wsUrl);
     this.nftContract = new ethers.Contract(
@@ -107,11 +81,9 @@ export class ContractListenerService implements OnApplicationBootstrap {
       this.listenToNftEvents();
       this.listenToAuctionEvents();
 
-      this.logger.log(this.MSG_LISTENERS_STARTED);
+      this.logger.log('Event listeners started using WebSocket provider');
     } catch (error) {
-      throw new ProviderConnectionError(
-        `${this.MSG_CONNECT_ERROR} ${(error as Error).message}`,
-      );
+      throw new ProviderConnectionError(error);
     }
   }
 
@@ -120,13 +92,13 @@ export class ContractListenerService implements OnApplicationBootstrap {
   }
 
   private listenToNftEvents() {
-    this.nftContract.on(this.EVENT_TRANSFER, async (from, to, tokenId) => {
+    this.nftContract.on(AUCTION_EVENTS.TRANSFER, async (from, to, tokenId) => {
       try {
         const tokenIdStr = tokenId.toString();
-        this.logger.log(`${this.MSG_NFT_TRANSFER} ${tokenIdStr} ➝ ${to}`);
+        this.logger.log(`NFT Transfer | Token ${tokenIdStr} ➝ ${to}`);
 
         if (from === ethers.ZeroAddress) {
-          this.logger.log(`${this.MSG_NFT_MINTED} ${tokenIdStr} by ${to}`);
+          this.logger.log(`NFT Minted | Token ${tokenIdStr} by ${to}`);
         }
 
         await this.persistOrUpdateNft(tokenIdStr, to);
@@ -142,7 +114,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
 
   private listenToAuctionEvents() {
     this.auctionFactory.on(
-      this.EVENT_AUCTION_CREATED,
+      AUCTION_EVENTS.AUCTION_CREATED,
       async (
         auctionAddress,
         creator,
@@ -202,7 +174,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       this.provider,
     );
 
-    contract.on(this.EVENT_BID_PLACED, async (bidder, amount) => {
+    contract.on(AUCTION_EVENTS.BID_PLACED, async (bidder, amount) => {
       try {
         const amountEth = ethers.formatEther(amount);
         if (!this.validator.validateBidPlacedPayload(bidder, amountEth)) {
@@ -228,7 +200,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     });
 
-    contract.on(this.EVENT_AUCTION_ENDED, async (winner, amount) => {
+    contract.on(AUCTION_EVENTS.AUCTION_ENDED, async (winner, amount) => {
       try {
         const amountEth = ethers.formatEther(amount);
         if (!this.validator.validateAuctionEndedPayload(winner, amountEth)) {
@@ -255,7 +227,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     });
 
-    contract.on(this.EVENT_AUCTION_STARTED, async () => {
+    contract.on(AUCTION_EVENTS.AUCTION_STARTED, async () => {
       try {
         this.logger.log(`AuctionStarted | ${auctionAddress}`);
         await this.auctionRepo.update(
@@ -273,7 +245,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     });
 
-    contract.on(this.EVENT_AUCTION_CANCELLED, async () => {
+    contract.on(AUCTION_EVENTS.AUCTION_CANCELLED, async () => {
       try {
         this.logger.log(`AuctionCancelled | ${auctionAddress}`);
         await this.auctionRepo.update(
@@ -291,7 +263,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     });
 
-    contract.on(this.EVENT_AUCTION_EXTENDED, async (newEndTime) => {
+    contract.on(AUCTION_EVENTS.AUCTION_EXTENDED, async (newEndTime) => {
       try {
         const newEndDate = new Date(Number(newEndTime) * 1000);
         if (!this.validator.validateAuctionExtendedPayload(newEndTime)) {
@@ -324,8 +296,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     } catch (error) {
       throw new PersistenceError(
-        this.OPERATION_PERSIST,
-        this.ENTITY_NFT,
+        OPERATIONS.PERSIST_NFT,
         error,
       );
     }
@@ -339,9 +310,8 @@ export class ContractListenerService implements OnApplicationBootstrap {
       );
     } catch (error) {
       throw new PersistenceError(
-        this.OPERATION_PERSIST,
-        this.ENTITY_USER,
-        error,
+        OPERATIONS.PERSIST_USER,
+        error
       );
     }
   }
@@ -374,8 +344,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
       }
     } catch (error) {
       throw new PersistenceError(
-        this.OPERATION_PRUNE,
-        this.ENTITY_AUCTION,
+        OPERATIONS.PRUNE_OUTDATED_AUCTIONS,
         error,
       );
     }

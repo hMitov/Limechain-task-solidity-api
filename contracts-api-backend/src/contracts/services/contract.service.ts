@@ -14,6 +14,7 @@ import * as myNftAbi from '../ABI/MyNFT.json';
 import { ProviderConnectionError } from '../errors/ProviderConnectionError';
 import { ContractOperationError } from '../errors/ContractOperationError';
 import { PersistenceError } from '../errors/PersistenceError';
+import { OPERATIONS, MESSAGES, CONFIG_KEYS } from '../../constants/auction.constants';
 
 @Injectable()
 export class ContractService {
@@ -29,35 +30,15 @@ export class ContractService {
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly WHITELIST_ROLE_ID = ethers.id('WHITELIST_ROLE');
 
-  private readonly OPERATION_ADD_WHITELIST = 'Add to whitelist';
-  private readonly OPERATION_REMOVE_WHITELIST = 'Remove from whitelist';
-  private readonly OPERATION_CHECK_WHITELIST = 'Check whitelist status';
-  private readonly OPERATION_UPDATE_PRIVATE_PRICE = 'Update private price';
-  private readonly OPERATION_UPDATE_PUBLIC_PRICE = 'Update public price';
-  private readonly OPERATION_UPDATE_BOTH_PRICES = 'Update NFT prices';
-  private readonly OPERATION_CHECK_ROLE = 'Check whitelister role';
-
-  private readonly MSG_ALREADY_WHITELISTED = 'Address is already whitelisted';
-  private readonly MSG_NOT_WHITELISTED = 'Address was not in the whitelist';
-  private readonly MSG_REMOVED = 'Successfully removed address from whitelist';
-  private readonly MSG_ADDED_TO_WHITELIST = 'Address added to whitelist';
-  private readonly MSG_INVALID_ETH_ADDRESS = 'Invalid Ethereum address format';
-  private readonly MSG_INVALID_PRICE = 'Invalid price format';
-  private readonly MSG_NEGATIVE_PRICE = 'Price cannot be negative';
-  private readonly MSG_NETWORK_ERROR =
-    'Failed to connect to the blockchain network';
-  private readonly MSG_NO_WHITELIST_ROLE =
-    'Caller does not have WHITELIST_ROLE';
-
   constructor(
     private configService: ConfigService,
     @InjectRepository(NftEntity) private nftRepo: Repository<NftEntity>,
     @InjectRepository(AuctionEntity)
     private auctionRepo: Repository<AuctionEntity>,
   ) {
-    const privateKey = this.configService.get<string>(this.PRIVATE_KEY)!;
-    const wsUrl = this.configService.get<string>(this.WS_URL)!;
-    const nftAddress = this.configService.get<string>(this.NFT_CONTRACT)!;
+    const privateKey = this.configService.get<string>(CONFIG_KEYS.PRIVATE_KEY)!;
+    const wsUrl = this.configService.get<string>(CONFIG_KEYS.WS_URL)!;
+    const nftAddress = this.configService.get<string>(CONFIG_KEYS.NFT_CONTRACT)!;
 
     this.provider = new ethers.WebSocketProvider(wsUrl);
     this.wallet = new ethers.Wallet(privateKey, this.provider);
@@ -67,16 +48,16 @@ export class ContractService {
   private validateEthereumAddress(address: string): void {
     const ethereumAddressRegex = /^0x[a-fA-F0-9]{40}$/;
     if (!ethereumAddressRegex.test(address)) {
-      throw new BadRequestException(this.MSG_INVALID_ETH_ADDRESS);
+      throw new BadRequestException(MESSAGES.INVALID_ETH_ADDRESS);
     }
   }
 
   private validatePrice(price: string): void {
     if (!price || isNaN(Number(price))) {
-      throw new BadRequestException(this.MSG_INVALID_PRICE);
+      throw new BadRequestException(MESSAGES.INVALID_PRICE);
     }
     if (Number(price) < 0) {
-      throw new BadRequestException(this.MSG_NEGATIVE_PRICE);
+      throw new BadRequestException(MESSAGES.NEGATIVE_PRICE);
     }
   }
 
@@ -85,7 +66,7 @@ export class ContractService {
     operationName: string,
     contractAddress: string,
   ): Promise<T> {
-    let lastError: Error = new Error('Operation failed');
+    let lastError: Error = new Error(OPERATIONS.OPERATION_FAILED);
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
@@ -113,7 +94,7 @@ export class ContractService {
     try {
       await this.provider.getNetwork();
     } catch (error) {
-      throw new ProviderConnectionError(this.MSG_NETWORK_ERROR);
+      throw new ProviderConnectionError(error);
     }
   }
 
@@ -122,7 +103,7 @@ export class ContractService {
       await this.validateNetworkConnection();
       return await this.nftRepo.find();
     } catch (error) {
-      throw new PersistenceError('fetch', 'NFTs', error);
+      throw new PersistenceError(OPERATIONS.FETCH_AVAILABLE_NFTs, error);
     }
   }
 
@@ -133,7 +114,7 @@ export class ContractService {
         order: { createdAt: 'DESC' },
       });
     } catch (error) {
-      throw new PersistenceError('fetch', 'Auctions', error);
+      throw new PersistenceError(OPERATIONS.FETCH_ONGOING_AUCTIONS, error);
     }
   }
 
@@ -160,12 +141,12 @@ export class ContractService {
           );
           return await tx.wait();
         },
-        this.OPERATION_UPDATE_BOTH_PRICES,
+        OPERATIONS.UPDATE_BOTH_PRICES,
         contractAddress,
       );
     } catch (error) {
       throw new ContractOperationError(
-        this.OPERATION_UPDATE_BOTH_PRICES,
+        OPERATIONS.UPDATE_BOTH_PRICES,
         await this.myNFT.getAddress(),
         error,
       );
@@ -189,12 +170,12 @@ export class ContractService {
           );
           return await tx.wait();
         },
-        this.OPERATION_UPDATE_PUBLIC_PRICE,
+        OPERATIONS.UPDATE_PUBLIC_PRICE,
         contractAddress,
       );
     } catch (error) {
       throw new ContractOperationError(
-        this.OPERATION_UPDATE_PUBLIC_PRICE,
+        OPERATIONS.UPDATE_PUBLIC_PRICE,
         await this.myNFT.getAddress(),
         error,
       );
@@ -218,12 +199,12 @@ export class ContractService {
           );
           return await tx.wait();
         },
-        this.OPERATION_UPDATE_PRIVATE_PRICE,
+        OPERATIONS.UPDATE_PRIVATE_PRICE,
         contractAddress,
       );
     } catch (error) {
       throw new ContractOperationError(
-        this.OPERATION_UPDATE_PRIVATE_PRICE,
+        OPERATIONS.UPDATE_PRIVATE_PRICE,
         await this.myNFT.getAddress(),
         error,
       );
@@ -246,14 +227,14 @@ export class ContractService {
 
       const isWhitelisted = await this.executeWithRetry(
         () => this.myNFT.whitelist(address),
-        this.OPERATION_CHECK_WHITELIST,
+        OPERATIONS.CHECK_WHITELIST_STATUS,
         contractAddress,
       );
 
       if (isWhitelisted) {
         return {
           success: false,
-          message: this.MSG_ALREADY_WHITELISTED,
+          message: MESSAGES.ALREADY_WHITELISTED,
         };
       }
 
@@ -261,22 +242,22 @@ export class ContractService {
         async () => {
           const tx = await this.myNFT.addAddressToWhitelist(address);
           await tx.wait();
-          return { success: true, message: this.MSG_ADDED_TO_WHITELIST };
+          return { success: true, message: MESSAGES.ADDED_TO_WHITELIST };
         },
-        this.OPERATION_ADD_WHITELIST,
+        OPERATIONS.ADD_TO_WHITELIST,
         contractAddress,
       );
     } catch (error) {
-      if (error.message?.includes(this.MSG_ALREADY_WHITELISTED)) {
+      if (error.message?.includes(MESSAGES.ALREADY_WHITELISTED)) {
         return {
           success: false,
-          message: this.MSG_ALREADY_WHITELISTED,
+          message: MESSAGES.ALREADY_WHITELISTED,
         };
       }
 
       this.logger.error(`Error adding address to whitelist: ${error.message}`);
       throw new ContractOperationError(
-        this.OPERATION_ADD_WHITELIST,
+        OPERATIONS.ADD_TO_WHITELIST,
         await this.myNFT.getAddress(),
         error,
       );
@@ -296,7 +277,7 @@ export class ContractService {
     if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return {
         success: true,
-        message: 'No addresses provided',
+        message: MESSAGES.NO_ADDRESSES_PROVIDED,
         removed: [],
         notInWhitelist: [],
       };
@@ -311,14 +292,14 @@ export class ContractService {
       try {
         const isWhitelisted = await this.executeWithRetry(
           () => this.myNFT.whitelist(address),
-          this.OPERATION_CHECK_WHITELIST,
+          OPERATIONS.CHECK_WHITELIST_STATUS,
           contractAddress,
         );
 
         if (!isWhitelisted) {
           return {
             success: true,
-            message: this.MSG_NOT_WHITELISTED,
+            message: MESSAGES.NOT_WHITELISTED,
             removed: [],
             notInWhitelist: [address],
           };
@@ -329,26 +310,26 @@ export class ContractService {
             const tx = await this.myNFT.removeAddressFromWhitelist(address);
             return await tx.wait();
           },
-          this.OPERATION_REMOVE_WHITELIST,
+          OPERATIONS.REMOVE_FROM_WHITELIST,
           contractAddress,
         );
 
         return {
           success: true,
-          message: this.MSG_REMOVED,
+          message: MESSAGES.REMOVED,
           removed: [address],
           notInWhitelist: [],
         };
       } catch (error) {
         throw new ContractOperationError(
-          this.OPERATION_REMOVE_WHITELIST,
+          OPERATIONS.REMOVE_FROM_WHITELIST,
           contractAddress,
           error,
         );
       }
     } catch (error) {
       throw new ContractOperationError(
-        this.OPERATION_REMOVE_WHITELIST,
+        OPERATIONS.REMOVE_FROM_WHITELIST,
         await this.myNFT.getAddress(),
         error,
       );
@@ -365,14 +346,14 @@ export class ContractService {
       );
 
       if (!hasRole) {
-        throw new ForbiddenException(this.MSG_NO_WHITELIST_ROLE);
+        throw new ForbiddenException(MESSAGES.NO_WHITELIST_ROLE);
       }
     } catch (error) {
       this.logger.error(
         `Error checking WHITELIST_ROLE for ${callerAddress}: ${error.message}`,
       );
       throw new ContractOperationError(
-        this.OPERATION_CHECK_ROLE,
+        OPERATIONS.CHECK_ROLE,
         await this.myNFT.getAddress(),
         error,
       );
