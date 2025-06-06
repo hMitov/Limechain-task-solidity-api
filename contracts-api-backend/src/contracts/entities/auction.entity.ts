@@ -36,10 +36,10 @@ export class AuctionEntity {
   @Column({ type: 'varchar', length: 42, nullable: true })
   highestBidder: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'decimal', precision: 18, scale: 8, default: 0.01 })
   minBidIncrement: string;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'bigint', default: 259200 }) // 3 days in seconds
   duration: number;
 
   @Column({ type: 'timestamp', nullable: true })
