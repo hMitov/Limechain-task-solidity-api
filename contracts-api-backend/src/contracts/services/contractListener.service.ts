@@ -12,10 +12,12 @@ import * as myNftAbi from '../ABI/MyNFT.json';
 import { AuctionListenerError } from '../errors/AuctionListenerError';
 import { ProviderConnectionError } from '../errors/ProviderConnectionError';
 import { PersistenceError } from '../errors/PersistenceError';
+import { AuctionEventInputsValidator } from '../utls/AuctionEventInputsValidator';
 
 @Injectable()
 export class ContractListenerService implements OnApplicationBootstrap {
   private readonly logger = new Logger(ContractListenerService.name);
+  private readonly validator: AuctionEventInputsValidator;
 
   private provider: ethers.WebSocketProvider;
 
@@ -72,6 +74,8 @@ export class ContractListenerService implements OnApplicationBootstrap {
       englishAuctionAbi.abi,
       this.provider,
     );
+
+    this.validator = new AuctionEventInputsValidator();
   }
 
   async onApplicationBootstrap() {
@@ -152,6 +156,18 @@ export class ContractListenerService implements OnApplicationBootstrap {
           const durationSec = Number(duration);
           const minIncrement = ethers.formatEther(minBidIncrement);
 
+          if (
+            !this.validator.validateAuctionCreatedPayload(
+              auctionAddress,
+              creator,
+              tokenIdStr,
+              durationSec,
+              minIncrement,
+            )
+          ) {
+            return;
+          }
+
           this.logger.log(
             `AuctionCreated | Token ${tokenIdStr} at ${auctionAddress}`,
           );
@@ -188,13 +204,17 @@ export class ContractListenerService implements OnApplicationBootstrap {
 
     contract.on(this.EVENT_BID_PLACED, async (bidder, amount) => {
       try {
-        const amountEth = Number(ethers.formatEther(amount));
+        const amountEth = ethers.formatEther(amount);
+        if (!this.validator.validateBidPlacedPayload(bidder, amountEth)) {
+          return;
+        }
+
         this.logger.log(`BidPlaced | ${bidder} bid ${amountEth} ETH`);
 
         await this.auctionRepo.update(
           { address: auctionAddress },
           {
-            highestBid: amountEth,
+            highestBid: Number(amountEth),
             highestBidder: bidder,
           },
         );
@@ -210,14 +230,18 @@ export class ContractListenerService implements OnApplicationBootstrap {
 
     contract.on(this.EVENT_AUCTION_ENDED, async (winner, amount) => {
       try {
-        const amountEth = Number(ethers.formatEther(amount));
+        const amountEth = ethers.formatEther(amount);
+        if (!this.validator.validateAuctionEndedPayload(winner, amountEth)) {
+          return;
+        }
+
         this.logger.log(`AuctionEnded | ${winner} won with ${amountEth} ETH`);
         await this.auctionRepo.update(
           { address: auctionAddress },
           {
             status: AuctionStatus.ENDED,
             endedAt: new Date(),
-            highestBid: amountEth,
+            highestBid: Number(amountEth),
             highestBidder: winner,
           },
         );
@@ -269,8 +293,12 @@ export class ContractListenerService implements OnApplicationBootstrap {
 
     contract.on(this.EVENT_AUCTION_EXTENDED, async (newEndTime) => {
       try {
-        this.logger.log(`AuctionExtended | ${auctionAddress}`);
         const newEndDate = new Date(Number(newEndTime) * 1000);
+        if (!this.validator.validateAuctionExtendedPayload(newEndTime)) {
+          return;
+        }
+
+        this.logger.log(`AuctionExtended | ${auctionAddress}`);
         await this.auctionRepo.update(
           { address: auctionAddress },
           {
