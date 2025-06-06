@@ -1,32 +1,45 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
+
+export enum AuctionStatus {
+  ACTIVE = 'active',
+  ENDED = 'ended',
+  CANCELLED = 'cancelled',
+  CREATED = 'created',
+  EXTENDED = 'extended',
+}
 
 @Entity('auctions')
 export class AuctionEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', length: 42, unique: true })
   address: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   tokenId: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 42 })
   creator: string;
 
-  @Column({ type: 'enum', enum: ['active', 'ended', 'cancelled', 'created'], default: 'created' })
-  status: string;
+  @Column({ type: 'enum', enum: AuctionStatus, default: AuctionStatus.CREATED })
+  status: AuctionStatus;
 
   @Column({ type: 'decimal', precision: 18, scale: 8, default: 0 })
   highestBid: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 42, nullable: true })
   highestBidder: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   minBidIncrement: string;
 
-  @Column()
+  @Column({ type: 'integer' })
   duration: number;
 
   @Column({ type: 'timestamp', nullable: true })
@@ -38,6 +51,6 @@ export class AuctionEntity {
   @Column({ type: 'timestamp', nullable: true })
   cancelledAt: Date;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 }

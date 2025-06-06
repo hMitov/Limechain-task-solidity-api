@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './Admin.css';
-
-const API_BASE_URL = 'http://localhost:3000';
+import { API_BASE_URL } from '../config/env';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState('nft');
@@ -9,8 +8,6 @@ const Admin = () => {
   const [pricePrivate, setPricePrivate] = useState('');
   const [pricePublic, setPricePublic] = useState('');
   const [whitelistAddress, setWhitelistAddress] = useState('');
-  const [pendingAddresses, setPendingAddresses] = useState([]);
-  const [pendingRemovalAddresses, setPendingRemovalAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -49,50 +46,6 @@ const Admin = () => {
     }
   };
 
-  const handleAddToPending = (e) => {
-    e.preventDefault();
-    if (!whitelistAddress) {
-      setError('Please enter an address to add');
-      return;
-    }
-
-    if (pendingAddresses.includes(whitelistAddress)) {
-      setError('This address is already in the list');
-      return;
-    }
-
-    setPendingAddresses([...pendingAddresses, whitelistAddress]);
-    setWhitelistAddress('');
-    setError(null);
-    setSuccess('Address added to pending list');
-  };
-
-  const handleAddToRemovalList = (e) => {
-    e.preventDefault();
-    if (!whitelistAddress) {
-      setError('Please enter an address to remove');
-      return;
-    }
-
-    if (pendingRemovalAddresses.includes(whitelistAddress)) {
-      setError('This address is already in the removal list');
-      return;
-    }
-
-    setPendingRemovalAddresses([...pendingRemovalAddresses, whitelistAddress]);
-    setWhitelistAddress('');
-    setError(null);
-    setSuccess('Address added to removal list');
-  };
-
-  const handleRemoveFromPending = (addressToRemove) => {
-    setPendingAddresses(pendingAddresses.filter(addr => addr !== addressToRemove));
-  };
-
-  const handleRemoveFromRemovalList = (addressToRemove) => {
-    setPendingRemovalAddresses(pendingRemovalAddresses.filter(addr => addr !== addressToRemove));
-  };
-
   const handleSubmitWhitelist = async (e) => {
     e.preventDefault();
     if (!callerAddress) {
@@ -100,8 +53,8 @@ const Admin = () => {
       return;
     }
 
-    if (pendingAddresses.length === 0) {
-      setError('Please add at least one address to the whitelist');
+    if (!whitelistAddress) {
+      setError('Please enter an address to add to whitelist');
       return;
     }
 
@@ -111,7 +64,7 @@ const Admin = () => {
 
     const payload = {
       callerAddress,
-      addresses: pendingAddresses,
+      address: whitelistAddress,
     };
     
     console.log('Sending whitelist request with payload:', payload);
@@ -128,12 +81,12 @@ const Admin = () => {
       const responseData = await response.json();
       console.log('Response from server:', responseData);
 
-      if (!response.ok) {
+      if (!response.ok || !responseData.success) {
         throw new Error(responseData.message || 'Failed to add to whitelist');
       }
 
-      setSuccess('Addresses added to whitelist successfully!');
-      setPendingAddresses([]);
+      setSuccess(responseData.message);
+      setWhitelistAddress('');
     } catch (err) {
       console.error('Error details:', err);
       setError(err.message);
@@ -148,8 +101,8 @@ const Admin = () => {
       return;
     }
 
-    if (pendingRemovalAddresses.length === 0) {
-      setError('Please add at least one address to remove');
+    if (!whitelistAddress) {
+      setError('Please enter an address to remove from whitelist');
       return;
     }
 
@@ -158,7 +111,7 @@ const Admin = () => {
     setSuccess(null);
 
     try {
-      console.log('Removing addresses from whitelist:', pendingRemovalAddresses);
+      console.log('Removing address from whitelist:', whitelistAddress);
       const response = await fetch(`${API_BASE_URL}/contract/admin/sales/whitelist`, {
         method: 'DELETE',
         headers: {
@@ -166,7 +119,7 @@ const Admin = () => {
         },
         body: JSON.stringify({
           callerAddress,
-          addresses: pendingRemovalAddresses
+          address: whitelistAddress
         }),
       });
 
@@ -177,15 +130,8 @@ const Admin = () => {
         throw new Error(responseData.message || 'Failed to remove from whitelist');
       }
 
-      if (responseData.notInWhitelist?.length > 0 && responseData.removed?.length > 0) {
-        setSuccess(responseData.message);
-      } else if (responseData.notInWhitelist?.length > 0) {
-        setError(responseData.message);
-      } else {
-        setSuccess(responseData.message);
-      }
-
-      setPendingRemovalAddresses([]);
+      setSuccess(responseData.message);
+      setWhitelistAddress('');
     } catch (err) {
       console.error('Error removing from whitelist:', err);
       setError(err.message);
@@ -320,95 +266,21 @@ const Admin = () => {
 
             <div className="button-group">
               <button
-                onClick={handleAddToPending}
+                onClick={handleSubmitWhitelist}
                 className="submit-button"
-                disabled={loading || pendingRemovalAddresses.length > 0}
-                title={pendingRemovalAddresses.length > 0 ? "Complete or clear removal list first" : ""}
+                disabled={loading}
               >
-                Add to List
+                {loading ? 'Adding...' : 'Add to Whitelist'}
               </button>
               <button
-                onClick={handleAddToRemovalList}
+                onClick={handleSubmitRemoval}
                 className="remove-button"
-                disabled={loading || pendingAddresses.length > 0}
-                title={pendingAddresses.length > 0 ? "Complete or clear add list first" : ""}
+                disabled={loading}
               >
-                Add to Removal List
+                {loading ? 'Removing...' : 'Remove from Whitelist'}
               </button>
             </div>
           </div>
-
-          {pendingAddresses.length > 0 && (
-            <div className="pending-addresses">
-              <h3>Addresses to Add to Whitelist</h3>
-              <div className="address-list">
-                {pendingAddresses.map((address) => (
-                  <div key={address} className="address-item">
-                    <span>{formatAddress(address)}</span>
-                    <button
-                      onClick={() => handleRemoveFromPending(address)}
-                      className="remove-button"
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="button-group">
-                <button
-                  onClick={handleSubmitWhitelist}
-                  className="submit-button submit-all"
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Submit All Addresses'}
-                </button>
-                <button
-                  onClick={() => setPendingAddresses([])}
-                  className="remove-button"
-                  type="button"
-                >
-                  Clear List
-                </button>
-              </div>
-            </div>
-          )}
-
-          {pendingRemovalAddresses.length > 0 && (
-            <div className="pending-addresses removal-list">
-              <h3>Addresses to Remove from Whitelist</h3>
-              <div className="address-list">
-                {pendingRemovalAddresses.map((address) => (
-                  <div key={address} className="address-item">
-                    <span>{formatAddress(address)}</span>
-                    <button
-                      onClick={() => handleRemoveFromRemovalList(address)}
-                      className="remove-button"
-                      type="button"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="button-group">
-                <button
-                  onClick={handleSubmitRemoval}
-                  className="submit-button submit-all remove-all"
-                  disabled={loading}
-                >
-                  {loading ? 'Removing...' : 'Remove All Addresses'}
-                </button>
-                <button
-                  onClick={() => setPendingRemovalAddresses([])}
-                  className="remove-button"
-                  type="button"
-                >
-                  Clear List
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

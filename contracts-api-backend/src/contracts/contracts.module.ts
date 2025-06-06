@@ -11,9 +11,9 @@ import { UserEntity } from './entities/user.entity';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([NftEntity, AuctionEntity, UserEntity])
+    TypeOrmModule.forFeature([NftEntity, AuctionEntity, UserEntity]),
   ],
   controllers: [ContractController],
   providers: [ContractService, ContractListenerService],
 })
-export class ContractsModule { }
+export class ContractsModule {}
