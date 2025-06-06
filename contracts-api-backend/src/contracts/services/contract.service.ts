@@ -23,9 +23,6 @@ export class ContractService {
   private wallet: ethers.Wallet;
   private myNFT: ethers.Contract;
 
-  private readonly PRIVATE_KEY = 'PRIVATE_KEY';
-  private readonly WS_URL = 'WS_URL';
-  private readonly NFT_CONTRACT = 'NFT_CONTRACT';
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
   private readonly WHITELIST_ROLE_ID = ethers.id('WHITELIST_ROLE');
