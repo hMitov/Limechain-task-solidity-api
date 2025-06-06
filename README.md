@@ -128,6 +128,31 @@ The service requires the following environment variables:
 
 The backend API will be available at http://localhost:3000
 
+### Database Migrations
+
+The project uses TypeORM for database migrations. To manage your database schema:
+
+1. Install TypeORM CLI (if not already installed):
+   ```bash
+   npm install -g typeorm
+   ```
+
+2. Generate a new migration:
+   ```bash
+   npm run typeorm -- migration:generate src/migrations/InitialSchema -d src/config/typeorm.config.ts
+   ```
+   This will create a new migration file with a timestamp in the name (e.g., `1749194273153-InitialSchema.ts`).
+
+3. Run migrations:
+   ```bash
+   npm run typeorm -- migration:run -d src/config/typeorm.config.ts
+   ```
+
+4. Revert the last migration (if needed):
+   ```bash
+   npm run typeorm -- migration:revert -d src/config/typeorm.config.ts
+   ```
+
 ### Frontend Application
 The frontend application is a separate repository that consumes this API. To start the frontend:
 
