@@ -9,7 +9,7 @@ export class AuctionEventInputsValidator {
   }
   
   private isValidTokenId(tokenId: string): boolean {
-    return tokenId !== '' && !isNaN(Number(tokenId));
+    return typeof tokenId === 'string' && tokenId.trim().length > 0;
   }
   
   private isValidDuration(duration: number): boolean {
