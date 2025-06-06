@@ -10,7 +10,7 @@ config();
 
 const { error, value: env } = configValidationSchema.validate(process.env, {
   abortEarly: false,
-  allowUnknown: true
+  allowUnknown: true,
 });
 
 if (error) {

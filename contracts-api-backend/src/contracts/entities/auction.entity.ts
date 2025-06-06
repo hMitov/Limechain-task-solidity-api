@@ -10,7 +10,7 @@ export enum AuctionStatus {
   ENDED = 'ended',
   CANCELLED = 'cancelled',
   CREATED = 'created',
-  EXTENDED = 'extended'
+  EXTENDED = 'extended',
 }
 
 @Entity('auctions')

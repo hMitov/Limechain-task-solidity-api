@@ -22,7 +22,7 @@ export class ContractListenerService implements OnApplicationBootstrap {
   private nftContract: ethers.Contract;
   private auctionFactory: ethers.Contract;
   private readonly DELAY_MS = 1000;
-  
+
   private readonly WS_URL = 'WS_URL';
   private readonly NFT_CONTRACT = 'NFT_CONTRACT';
   private readonly AUCTION_FACTORY = 'AUCTION_FACTORY';
@@ -42,7 +42,8 @@ export class ContractListenerService implements OnApplicationBootstrap {
   private readonly EVENT_AUCTION_CANCELLED = 'AuctionCancelled';
   private readonly EVENT_AUCTION_EXTENDED = 'AuctionExtended';
 
-  private readonly MSG_LISTENERS_STARTED = 'Event listeners started using WebSocket provider';
+  private readonly MSG_LISTENERS_STARTED =
+    'Event listeners started using WebSocket provider';
   private readonly MSG_CONNECT_ERROR = 'Failed to connect to provider:';
   private readonly MSG_NFT_TRANSFER = 'NFT Transfer | Token';
   private readonly MSG_NFT_MINTED = 'NFT Minted | Token';
@@ -56,7 +57,9 @@ export class ContractListenerService implements OnApplicationBootstrap {
   ) {
     const wsUrl = this.configService.get<string>(this.WS_URL)!;
     const nftAddress = this.configService.get<string>(this.NFT_CONTRACT)!;
-    const auctionAddress = this.configService.get<string>(this.AUCTION_FACTORY)!;
+    const auctionAddress = this.configService.get<string>(
+      this.AUCTION_FACTORY,
+    )!;
 
     this.provider = new ethers.WebSocketProvider(wsUrl);
     this.nftContract = new ethers.Contract(

@@ -111,7 +111,9 @@ describe('ContractService', () => {
     // Mock the Contract constructor
     (ethers.Contract as jest.Mock).mockImplementation(() => mockContract);
     // Mock the WebSocketProvider constructor
-    (ethers.WebSocketProvider as jest.Mock).mockImplementation(() => mockProvider);
+    (ethers.WebSocketProvider as jest.Mock).mockImplementation(
+      () => mockProvider,
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -272,7 +274,9 @@ describe('ContractService', () => {
 
     it('should throw PersistenceError (caused by ProviderConnectionError) when network connection fails', async () => {
       mockProvider.getNetwork.mockRejectedValue(new Error('Network error'));
-      await expect(service.fetchAvailableNFTs()).rejects.toThrow(PersistenceError);
+      await expect(service.fetchAvailableNFTs()).rejects.toThrow(
+        PersistenceError,
+      );
       try {
         await service.fetchAvailableNFTs();
       } catch (e) {
@@ -282,24 +286,32 @@ describe('ContractService', () => {
 
     it('should throw ContractOperationError when contract operation fails after retries', async () => {
       mockContract.owner.mockResolvedValue(mockOwner);
-      mockContract.getAddress.mockResolvedValue('0x1234567890123456789012345678901234567890');
+      mockContract.getAddress.mockResolvedValue(
+        '0x1234567890123456789012345678901234567890',
+      );
       mockContract.setPrices.mockRejectedValue(new Error('Transaction failed'));
 
-      await expect(service.updateNftPrices(mockOwner, '0.1', '0.2')).rejects.toThrow(ContractOperationError);
+      await expect(
+        service.updateNftPrices(mockOwner, '0.1', '0.2'),
+      ).rejects.toThrow(ContractOperationError);
     });
   });
 
   describe('Database Operations', () => {
     it('should throw PersistenceError when NFT fetch fails', async () => {
       mockNftRepo.find.mockRejectedValue(new Error('Database error'));
-      
-      await expect(service.fetchAvailableNFTs()).rejects.toThrow(PersistenceError);
+
+      await expect(service.fetchAvailableNFTs()).rejects.toThrow(
+        PersistenceError,
+      );
     });
 
     it('should throw PersistenceError when auction fetch fails', async () => {
       mockAuctionRepo.find.mockRejectedValue(new Error('Database error'));
-      
-      await expect(service.fetchOngoingAuctions()).rejects.toThrow(PersistenceError);
+
+      await expect(service.fetchOngoingAuctions()).rejects.toThrow(
+        PersistenceError,
+      );
     });
   });
 });
