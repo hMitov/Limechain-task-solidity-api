@@ -1,9 +1,19 @@
-import { Controller, Get, Patch, Post, Delete, Body, BadRequestException, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Delete,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
 import { ContractService } from '../services/contract.service';
 
 @Controller('contract')
 export class ContractController {
-  constructor(private readonly contractService: ContractService) { }
+  private readonly MSG_MISSING_FIELD = 'Missing required fields';
+
+  constructor(private readonly contractService: ContractService) {}
 
   @Get('/nfts')
   getAvailableNFTs() {
@@ -16,70 +26,75 @@ export class ContractController {
   }
 
   @Post('/admin/sales/prices')
-  updateNftPrices(@Body() body: { callerAddress: string, pricePrivate: string, pricePublic: string }) {
-    if (!body?.callerAddress?.trim() || !body?.pricePrivate?.trim() || !body?.pricePublic?.trim()) {
-      throw new BadRequestException('Missing required fields');
+  updateNftPrices(
+    @Body()
+    body: {
+      callerAddress: string;
+      pricePrivate: string;
+      pricePublic: string;
+    },
+  ) {
+    if (
+      !body?.callerAddress?.trim() ||
+      !body?.pricePrivate?.trim() ||
+      !body?.pricePublic?.trim()
+    ) {
+      throw new BadRequestException(this.MSG_MISSING_FIELD);
     }
-
-    try {
-      return this.contractService.updateNftPrices(body.callerAddress, body.pricePrivate, body.pricePublic);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException(error.message);
-    }
+    return this.contractService.updateNftPrices(
+      body.callerAddress,
+      body.pricePrivate,
+      body.pricePublic,
+    );
   }
 
   @Patch('/admin/sales/price/public')
-  updateNftPublicPrice(@Body() body: { callerAddress: string, pricePublic: string }) {
+  updateNftPublicPrice(
+    @Body() body: { callerAddress: string; pricePublic: string },
+  ) {
     if (!body?.callerAddress?.trim() || !body?.pricePublic?.trim()) {
-      throw new BadRequestException('Missing required fields');
+      throw new BadRequestException(this.MSG_MISSING_FIELD);
     }
-    
-    return this.contractService.updateNftPublicPrice(body.callerAddress, body.pricePublic);
+    return this.contractService.updateNftPublicPrice(
+      body.callerAddress,
+      body.pricePublic,
+    );
   }
 
   @Patch('/admin/sales/price/private')
-  updateNftPrivatePrice(@Body() body: { callerAddress: string, pricePrivate: string }) {
+  updateNftPrivatePrice(
+    @Body() body: { callerAddress: string; pricePrivate: string },
+  ) {
     if (!body?.callerAddress?.trim() || !body?.pricePrivate?.trim()) {
-      throw new BadRequestException('Missing required fields');
+      throw new BadRequestException(this.MSG_MISSING_FIELD);
     }
-    
-    return this.contractService.updateNftPrivatePrice(body.callerAddress, body.pricePrivate);
+    return this.contractService.updateNftPrivatePrice(
+      body.callerAddress,
+      body.pricePrivate,
+    );
   }
 
   @Post('/admin/sales/whitelist')
-  addToWhitelist(@Body() body: { callerAddress: string, addresses: string[] }) {
-    if (!body?.callerAddress?.trim() || !body?.addresses?.length) {
-      throw new BadRequestException('Missing required fields');
+  addToWhitelist(@Body() body: { callerAddress: string; address: string }) {
+    if (!body?.callerAddress?.trim() || !body?.address?.trim()) {
+      throw new BadRequestException(this.MSG_MISSING_FIELD);
     }
-
-    try {
-      // Remove duplicates from addresses array
-      const uniqueAddresses = [...new Set(body.addresses)];
-      return this.contractService.addToWhitelist(body.callerAddress, uniqueAddresses);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException(error.message);
-    }
+    return this.contractService.addToWhitelist(
+      body.callerAddress,
+      body.address,
+    );
   }
 
   @Delete('/admin/sales/whitelist')
-  removeFromWhitelist(@Body() body: { callerAddress: string, addresses: string[] }) {
-    if (!body?.callerAddress?.trim() || !body?.addresses?.length) {
-      throw new BadRequestException('Missing required fields');
+  removeFromWhitelist(
+    @Body() body: { callerAddress: string; address: string },
+  ) {
+    if (!body?.callerAddress?.trim() || !body?.address?.trim()) {
+      throw new BadRequestException(this.MSG_MISSING_FIELD);
     }
-
-    try {
-      return this.contractService.removeFromWhitelist(body.callerAddress, body.addresses);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new BadRequestException(error.message);
-    }
+    return this.contractService.removeFromWhitelist(
+      body.callerAddress,
+      body.address,
+    );
   }
 }

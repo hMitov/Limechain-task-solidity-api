@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContractController } from '../src/contracts/controllers/contract.controller';
 import { ContractService } from '../src/contracts/services/contract.service';
-import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 
 describe('ContractController', () => {
   let controller: ContractController;
@@ -53,9 +53,13 @@ describe('ContractController', () => {
     });
 
     it('should propagate errors from service', async () => {
-      mockContractService.fetchAvailableNFTs.mockRejectedValue(new Error('Database error'));
+      mockContractService.fetchAvailableNFTs.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(controller.getAvailableNFTs()).rejects.toThrow('Database error');
+      await expect(controller.getAvailableNFTs()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -78,9 +82,13 @@ describe('ContractController', () => {
     });
 
     it('should propagate errors from service', async () => {
-      mockContractService.fetchOngoingAuctions.mockRejectedValue(new Error('Database error'));
+      mockContractService.fetchOngoingAuctions.mockRejectedValue(
+        new Error('Database error'),
+      );
 
-      await expect(controller.getOngoingAuctions()).rejects.toThrow('Database error');
+      await expect(controller.getOngoingAuctions()).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 
@@ -102,13 +110,19 @@ describe('ContractController', () => {
       expect(service.updateNftPrices).toHaveBeenCalledWith(
         validBody.callerAddress,
         validBody.pricePrivate,
-        validBody.pricePublic
+        validBody.pricePublic,
       );
     });
 
     it('should throw BadRequestException when fields are missing', async () => {
-      const invalidBody = {} as { callerAddress: string; pricePrivate: string; pricePublic: string };
-      expect(() => controller.updateNftPrices(invalidBody)).toThrow(BadRequestException);
+      const invalidBody = {} as {
+        callerAddress: string;
+        pricePrivate: string;
+        pricePublic: string;
+      };
+      expect(() => controller.updateNftPrices(invalidBody)).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when fields are empty strings', async () => {
@@ -117,7 +131,9 @@ describe('ContractController', () => {
         pricePrivate: '   ',
         pricePublic: '   ',
       };
-      expect(() => controller.updateNftPrices(invalidBody)).toThrow(BadRequestException);
+      expect(() => controller.updateNftPrices(invalidBody)).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for invalid Ethereum address', async () => {
@@ -126,8 +142,12 @@ describe('ContractController', () => {
         pricePrivate: '0.1',
         pricePublic: '0.2',
       };
-      mockContractService.updateNftPrices.mockRejectedValue(new BadRequestException('Invalid Ethereum address'));
-      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(BadRequestException);
+      mockContractService.updateNftPrices.mockRejectedValue(
+        new BadRequestException('Invalid Ethereum address'),
+      );
+      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for negative prices', async () => {
@@ -136,8 +156,12 @@ describe('ContractController', () => {
         pricePrivate: '-0.1',
         pricePublic: '0.2',
       };
-      mockContractService.updateNftPrices.mockRejectedValue(new BadRequestException('Price cannot be negative'));
-      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(BadRequestException);
+      mockContractService.updateNftPrices.mockRejectedValue(
+        new BadRequestException('Price cannot be negative'),
+      );
+      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for invalid price format', async () => {
@@ -146,8 +170,12 @@ describe('ContractController', () => {
         pricePrivate: 'abc',
         pricePublic: '0.2',
       };
-      mockContractService.updateNftPrices.mockRejectedValue(new BadRequestException('Invalid price format'));
-      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(BadRequestException);
+      mockContractService.updateNftPrices.mockRejectedValue(
+        new BadRequestException('Invalid price format'),
+      );
+      await expect(controller.updateNftPrices(invalidBody)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -163,7 +191,7 @@ describe('ContractController', () => {
       await controller.updateNftPublicPrice(validBody);
       expect(service.updateNftPublicPrice).toHaveBeenCalledWith(
         validBody.callerAddress,
-        validBody.pricePublic
+        validBody.pricePublic,
       );
     });
 
@@ -196,7 +224,7 @@ describe('ContractController', () => {
       await controller.updateNftPrivatePrice(validBody);
       expect(service.updateNftPrivatePrice).toHaveBeenCalledWith(
         validBody.callerAddress,
-        validBody.pricePrivate
+        validBody.pricePrivate,
       );
     });
 
@@ -226,7 +254,7 @@ describe('ContractController', () => {
       it('should add addresses to whitelist with valid input', async () => {
         const validBody = {
           callerAddress: '0x1234567890123456789012345678901234567890',
-          addresses: ['0x1111111111111111111111111111111111111111'],
+          address: '0x1111111111111111111111111111111111111111',
         };
         mockContractService.addToWhitelist.mockResolvedValue({
           success: true,
@@ -240,48 +268,44 @@ describe('ContractController', () => {
         });
         expect(service.addToWhitelist).toHaveBeenCalledWith(
           validBody.callerAddress,
-          validBody.addresses
+          validBody.address,
         );
       });
 
       it('should throw BadRequestException when fields are missing', async () => {
-        const invalidBody = {} as { callerAddress: string; addresses: string[] };
-        expect(() => controller.addToWhitelist(invalidBody)).toThrow(BadRequestException);
+        const invalidBody = {} as { callerAddress: string; address: string };
+        expect(() => controller.addToWhitelist(invalidBody)).toThrow(
+          BadRequestException,
+        );
       });
 
       it('should throw BadRequestException when fields are empty', async () => {
         const invalidBody = {
           callerAddress: '   ',
-          addresses: [],
+          address: '',
         };
-        expect(() => controller.addToWhitelist(invalidBody)).toThrow(BadRequestException);
+        expect(() => controller.addToWhitelist(invalidBody)).toThrow(
+          BadRequestException,
+        );
       });
 
       it('should throw BadRequestException for invalid caller address', async () => {
         const invalidBody = {
           callerAddress: '0xinvalid',
-          addresses: ['0x1111111111111111111111111111111111111111'],
+          address: '0x1111111111111111111111111111111111111111',
         };
-        mockContractService.addToWhitelist.mockRejectedValue(new BadRequestException('Invalid Ethereum address'));
-        await expect(controller.addToWhitelist(invalidBody)).rejects.toThrow(BadRequestException);
-      });
-
-      it('should throw BadRequestException for invalid addresses in the list', async () => {
-        const invalidBody = {
-          callerAddress: '0x1234567890123456789012345678901234567890',
-          addresses: ['0xinvalid', '0x1111111111111111111111111111111111111111'],
-        };
-        mockContractService.addToWhitelist.mockRejectedValue(new BadRequestException('Invalid Ethereum addresses in list'));
-        await expect(controller.addToWhitelist(invalidBody)).rejects.toThrow(BadRequestException);
+        mockContractService.addToWhitelist.mockRejectedValue(
+          new BadRequestException('Invalid Ethereum address'),
+        );
+        await expect(controller.addToWhitelist(invalidBody)).rejects.toThrow(
+          BadRequestException,
+        );
       });
 
       it('should handle duplicate addresses', async () => {
         const bodyWithDuplicates = {
           callerAddress: '0x1234567890123456789012345678901234567890',
-          addresses: [
-            '0x1111111111111111111111111111111111111111',
-            '0x1111111111111111111111111111111111111111',
-          ],
+          address: '0x1111111111111111111111111111111111111111',
         };
         mockContractService.addToWhitelist.mockResolvedValue({
           success: true,
@@ -289,11 +313,9 @@ describe('ContractController', () => {
         });
 
         await controller.addToWhitelist(bodyWithDuplicates);
-        // Remove duplicates before checking the call
-        const uniqueAddresses = [...new Set(bodyWithDuplicates.addresses)];
         expect(service.addToWhitelist).toHaveBeenCalledWith(
           bodyWithDuplicates.callerAddress,
-          uniqueAddresses
+          bodyWithDuplicates.address,
         );
       });
     });
@@ -306,12 +328,12 @@ describe('ContractController', () => {
       it('should remove addresses from whitelist with valid input', async () => {
         const validBody = {
           callerAddress: '0x1234567890123456789012345678901234567890',
-          addresses: ['0x1111111111111111111111111111111111111111'],
+          address: '0x1111111111111111111111111111111111111111',
         };
         mockContractService.removeFromWhitelist.mockResolvedValue({
           success: true,
           message: 'Successfully removed 1 address',
-          removed: validBody.addresses,
+          removed: validBody.address,
           notInWhitelist: [],
         });
 
@@ -319,45 +341,44 @@ describe('ContractController', () => {
         expect(result).toEqual({
           success: true,
           message: 'Successfully removed 1 address',
-          removed: validBody.addresses,
+          removed: validBody.address,
           notInWhitelist: [],
         });
         expect(service.removeFromWhitelist).toHaveBeenCalledWith(
           validBody.callerAddress,
-          validBody.addresses
+          validBody.address,
         );
       });
 
       it('should throw BadRequestException when fields are missing', async () => {
-        const invalidBody = {} as { callerAddress: string; addresses: string[] };
-        expect(() => controller.removeFromWhitelist(invalidBody)).toThrow(BadRequestException);
+        const invalidBody = {} as { callerAddress: string; address: string };
+        expect(() => controller.removeFromWhitelist(invalidBody)).toThrow(
+          BadRequestException,
+        );
       });
 
       it('should throw BadRequestException when fields are empty', async () => {
         const invalidBody = {
           callerAddress: '   ',
-          addresses: [],
+          address: '',
         };
-        expect(() => controller.removeFromWhitelist(invalidBody)).toThrow(BadRequestException);
+        expect(() => controller.removeFromWhitelist(invalidBody)).toThrow(
+          BadRequestException,
+        );
       });
 
       it('should throw BadRequestException for invalid caller address', async () => {
         const invalidBody = {
           callerAddress: '0xinvalid',
-          addresses: ['0x1111111111111111111111111111111111111111'],
+          address: '0x1111111111111111111111111111111111111111',
         };
-        mockContractService.removeFromWhitelist.mockRejectedValue(new BadRequestException('Invalid Ethereum address'));
-        await expect(controller.removeFromWhitelist(invalidBody)).rejects.toThrow(BadRequestException);
-      });
-
-      it('should throw BadRequestException for invalid addresses in the list', async () => {
-        const invalidBody = {
-          callerAddress: '0x1234567890123456789012345678901234567890',
-          addresses: ['0xinvalid', '0x1111111111111111111111111111111111111111'],
-        };
-        mockContractService.removeFromWhitelist.mockRejectedValue(new BadRequestException('Invalid Ethereum addresses in list'));
-        await expect(controller.removeFromWhitelist(invalidBody)).rejects.toThrow(BadRequestException);
+        mockContractService.removeFromWhitelist.mockRejectedValue(
+          new BadRequestException('Invalid Ethereum address'),
+        );
+        await expect(
+          controller.removeFromWhitelist(invalidBody),
+        ).rejects.toThrow(BadRequestException);
       });
     });
   });
-}); 
+});
