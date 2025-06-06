@@ -21,7 +21,7 @@ export class AuctionEntity {
   @Column({ type: 'varchar', length: 42, unique: true })
   address: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 64 })
   tokenId: string;
 
   @Column({ type: 'varchar', length: 42 })
