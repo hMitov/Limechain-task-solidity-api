@@ -9,6 +9,8 @@ import { Response } from 'express';
 import { ContractOperationError } from '../errors/ContractOperationError';
 import { ProviderConnectionError } from '../errors/ProviderConnectionError';
 import { PersistenceError } from '../errors/PersistenceError';
+import { MissingConfigurationError } from '../errors/MissingConfigurationError';
+import { AuctionListenerError } from '../errors/AuctionListenerError';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -29,6 +31,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = HttpStatus.SERVICE_UNAVAILABLE;
       message = exception.message;
     } else if (exception instanceof PersistenceError) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = exception.message;
+    } else if (exception instanceof MissingConfigurationError) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = exception.message;
+    } else if (exception instanceof AuctionListenerError) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = exception.message;
     } else if (exception instanceof Error) {
