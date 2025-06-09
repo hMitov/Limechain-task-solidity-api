@@ -14,9 +14,7 @@ const { error, value: env } = configValidationSchema.validate(process.env, {
 });
 
 if (error) {
-  throw new MissingConfigurationError(
-    `Environment validation error:\n${error.message}`,
-  );
+  throw new MissingConfigurationError(error);
 }
 
 const options: DataSourceOptions = {

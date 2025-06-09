@@ -1,6 +1,7 @@
 export class ProviderConnectionError extends Error {
-  constructor(error: Error) {
-    super(`Failed to connect to provider: ${error.message}`);
+  constructor(cause: unknown) {
+    super(`Failed to connect to provider | Reason: ${(cause as Error)?.message}`);
     this.name = 'ProviderConnectionError';
+    this.cause = cause;
   }
 }

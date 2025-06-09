@@ -1,10 +1,9 @@
-export class PersistenceError extends Error {
-  cause: unknown;
-  constructor(operation: string, originalError: unknown) {
+export class PersistenceError extends Error {  
+  constructor(operation: string, cause: unknown) {
     super(
-      `Failed to ${operation} | Reason: ${(originalError as Error)?.message}`,
+      `Failed to ${operation} | Reason: ${(cause as Error)?.message}`,
     );
     this.name = 'PersistenceError';
-    this.cause = originalError;
+    this.cause = cause;
   }
 }
