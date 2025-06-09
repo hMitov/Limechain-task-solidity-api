@@ -1,8 +1,9 @@
 export class AuctionListenerError extends Error {
-  constructor(auctionAddress: string, originalError: unknown) {
+  constructor(auctionAddress: string, cause: unknown) {
     super(
-      `Failed to attach listener to auction contract ${auctionAddress} | Reason: ${(originalError as Error)?.message}`,
+      `Failed to attach listener to auction contract ${auctionAddress} | Reason: ${(cause as Error)?.message}`,
     );
     this.name = 'AuctionListenerError';
+    this.cause = cause;
   }
 }

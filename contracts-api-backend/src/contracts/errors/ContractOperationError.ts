@@ -1,12 +1,9 @@
 export class ContractOperationError extends Error {
-  constructor(
-    operation: string,
-    contractAddress: string,
-    originalError: unknown,
-  ) {
+  constructor(operation: string, contractAddress: string, cause: unknown) {
     super(
-      `Failed to ${operation} on contract ${contractAddress} | Reason: ${(originalError as Error)?.message}`,
+      `Failed to ${operation} on contract ${contractAddress} | Reason: ${(cause as Error)?.message}`,
     );
     this.name = 'ContractOperationError';
+    this.cause = cause;
   }
 }

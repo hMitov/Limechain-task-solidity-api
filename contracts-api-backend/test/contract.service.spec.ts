@@ -9,6 +9,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ProviderConnectionError } from '../src/contracts/errors/ProviderConnectionError';
 import { ContractOperationError } from '../src/contracts/errors/ContractOperationError';
 import { PersistenceError } from '../src/contracts/errors/PersistenceError';
+import { RetryFailedError } from '../src/contracts/errors/RetryFailedError';
 
 // Mock ethers
 jest.mock('ethers', () => ({
@@ -241,9 +242,7 @@ describe('ContractService', () => {
       const result = await service.removeFromWhitelist(mockOwner, '0xInvalid');
       expect(result).toEqual({
         success: true,
-        message: 'No addresses provided',
-        removed: [],
-        notInWhitelist: [],
+        message: 'No addresses provided'
       });
     });
 
@@ -257,19 +256,11 @@ describe('ContractService', () => {
 
   describe('Network Connection', () => {
     it('should validate network connection before operations', async () => {
-      mockContract.getNetwork = jest
-        .fn()
-        .mockRejectedValue(new Error('Network error'));
-      mockContract.owner = jest.fn().mockResolvedValue(mockOwner);
-      mockContract.updatePrices = jest.fn().mockResolvedValue({
-        wait: jest.fn().mockResolvedValue(true),
-      });
+      mockProvider.getNetwork.mockRejectedValue(new Error('Network error'));
 
       await expect(
         service.updateNftPrices(mockOwner, '0.1', '0.2'),
-      ).rejects.toThrow(
-        "Failed to Update NFT prices on contract undefined | Reason: Failed to Update NFT prices on contract undefined | Reason: Cannot read properties of undefined (reading 'wait')",
-      );
+      ).rejects.toThrow(ProviderConnectionError);
     });
 
     it('should throw PersistenceError (caused by ProviderConnectionError) when network connection fails', async () => {
@@ -285,10 +276,8 @@ describe('ContractService', () => {
     });
 
     it('should throw ContractOperationError when contract operation fails after retries', async () => {
-      mockContract.owner.mockResolvedValue(mockOwner);
-      mockContract.getAddress.mockResolvedValue(
-        '0x1234567890123456789012345678901234567890',
-      );
+      const contractAddress = '0x1234567890123456789012345678901234567890';
+      mockContract.getAddress.mockResolvedValue(contractAddress);
       mockContract.setPrices.mockRejectedValue(new Error('Transaction failed'));
 
       await expect(

@@ -14,6 +14,7 @@ import * as myNftAbi from '../ABI/MyNFT.json';
 import { ProviderConnectionError } from '../errors/ProviderConnectionError';
 import { ContractOperationError } from '../errors/ContractOperationError';
 import { PersistenceError } from '../errors/PersistenceError';
+import { RetryFailedError } from '../errors/RetryFailedError';
 import { OPERATIONS, MESSAGES, CONFIG_KEYS } from '../../constants/auction.constants';
 
 @Injectable()
@@ -83,8 +84,9 @@ export class ContractService {
         );
       }
     }
+    this.logger.error(`Operation ${operationName} failed for contract ${contractAddress} | Reason: ${(lastError as Error)?.message}`);
 
-    throw new ContractOperationError(operationName, contractAddress, lastError);
+    throw new RetryFailedError(operationName, contractAddress, lastError);
   }
 
   private async validateNetworkConnection(): Promise<void> {
@@ -220,7 +222,6 @@ export class ContractService {
 
     try {
       const contractAddress = await this.myNFT.getAddress();
-      this.logger.log(`Add address to nft contract at ${contractAddress}`);
 
       const isWhitelisted = await this.executeWithRetry(
         () => this.myNFT.hasRole(this.myNFT.WHITELISTED_ROLE(), address),
@@ -234,6 +235,8 @@ export class ContractService {
           message: MESSAGES.ALREADY_WHITELISTED,
         };
       }
+
+      this.logger.log(`Add address to nft contract at ${contractAddress}`);
 
       return await this.executeWithRetry(
         async () => {
@@ -264,67 +267,53 @@ export class ContractService {
   async removeFromWhitelist(
     callerAddress: string,
     address: string,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    removed: string[];
-    notInWhitelist: string[];
-  }> {
+  ): Promise<{ success: boolean; message: string }> {
+
     this.validateEthereumAddress(callerAddress);
+  
     if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
       return {
         success: true,
         message: MESSAGES.NO_ADDRESSES_PROVIDED,
-        removed: [],
-        notInWhitelist: [],
       };
     }
-
+  
     await this.validateNetworkConnection();
     await this.assertWhitelisterRole(callerAddress);
-
+  
     try {
       const contractAddress = await this.myNFT.getAddress();
-
-      try {
-        const isWhitelisted = await this.executeWithRetry(
-          () => this.myNFT.hasRole(this.myNFT.WHITELISTED_ROLE(), address),
-          OPERATIONS.CHECK_WHITELIST_STATUS,
-          contractAddress,
-        );
-
-        if (!isWhitelisted) {
-          return {
-            success: true,
-            message: MESSAGES.NOT_WHITELISTED,
-            removed: [],
-            notInWhitelist: [address],
-          };
-        }
-
-        const tx = await this.executeWithRetry(
-          async () => {
-            const tx = await this.myNFT.removeAddressFromWhitelist(address);
-            return await tx.wait();
-          },
-          OPERATIONS.REMOVE_FROM_WHITELIST,
-          contractAddress,
-        );
-
+  
+      const isWhitelisted = await this.executeWithRetry(
+        () => this.myNFT.hasRole(this.myNFT.WHITELISTED_ROLE(), address),
+        OPERATIONS.CHECK_WHITELIST_STATUS,
+        contractAddress,
+      );
+  
+      if (!isWhitelisted) {
         return {
           success: true,
-          message: MESSAGES.REMOVED,
-          removed: [address],
-          notInWhitelist: [],
+          message: MESSAGES.NOT_WHITELISTED,
         };
-      } catch (error) {
-        throw new ContractOperationError(
-          OPERATIONS.REMOVE_FROM_WHITELIST,
-          contractAddress,
-          error,
-        );
       }
+  
+      this.logger.log(`Remove address from nft contract at ${contractAddress}`);
+  
+      await this.executeWithRetry(
+        async () => {
+          const tx = await this.myNFT.removeAddressFromWhitelist(address);
+          await tx.wait();
+        },
+        OPERATIONS.REMOVE_FROM_WHITELIST,
+        contractAddress,
+      );
+  
+      return {
+        success: true,
+        message: MESSAGES.REMOVED
+      };
     } catch (error) {
+      this.logger.error(`Error removing address from whitelist: ${error.message}`);
       throw new ContractOperationError(
         OPERATIONS.REMOVE_FROM_WHITELIST,
         await this.myNFT.getAddress(),
