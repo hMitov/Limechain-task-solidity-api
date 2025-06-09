@@ -144,6 +144,11 @@ export class ContractService {
         contractAddress,
       );
     } catch (error) {
+      if (error instanceof RetryFailedError) {
+        throw error;
+      }
+
+      this.logger.error(`Error updating nft prices: ${error.message}`);
       throw new ContractOperationError(
         OPERATIONS.UPDATE_BOTH_PRICES,
         await this.myNFT.getAddress(),
@@ -173,6 +178,11 @@ export class ContractService {
         contractAddress,
       );
     } catch (error) {
+      if (error instanceof RetryFailedError) {
+        throw error;
+      }
+
+      this.logger.error(`Error updating nft public price: ${error.message}`);
       throw new ContractOperationError(
         OPERATIONS.UPDATE_PUBLIC_PRICE,
         await this.myNFT.getAddress(),
@@ -202,6 +212,11 @@ export class ContractService {
         contractAddress,
       );
     } catch (error) {
+      if (error instanceof RetryFailedError) {
+        throw error;
+      }
+
+      this.logger.error(`Error updating nft private price: ${error.message}`);
       throw new ContractOperationError(
         OPERATIONS.UPDATE_PRIVATE_PRICE,
         await this.myNFT.getAddress(),
@@ -248,6 +263,10 @@ export class ContractService {
         contractAddress,
       );
     } catch (error) {
+      if (error instanceof RetryFailedError) {
+        throw error;
+      }
+
       if (error.message?.includes(MESSAGES.ALREADY_WHITELISTED)) {
         return {
           success: false,
@@ -270,8 +289,7 @@ export class ContractService {
   ): Promise<{ success: boolean; message: string }> {
 
     this.validateEthereumAddress(callerAddress);
-  
-    if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    if (!address || !ethers.isAddress(address)) {
       return {
         success: true,
         message: MESSAGES.NO_ADDRESSES_PROVIDED,
@@ -313,6 +331,10 @@ export class ContractService {
         message: MESSAGES.REMOVED
       };
     } catch (error) {
+      if (error instanceof RetryFailedError) {
+        throw error;
+      }
+
       this.logger.error(`Error removing address from whitelist: ${error.message}`);
       throw new ContractOperationError(
         OPERATIONS.REMOVE_FROM_WHITELIST,
