@@ -34,7 +34,7 @@ export const AUCTION_EVENTS = {
     INVALID_PRICE: 'Invalid price format',
     NEGATIVE_PRICE: 'Price cannot be negative',
     NETWORK_ERROR: 'Failed to connect to the blockchain network',
-    NO_WHITELIST_ROLE: 'Caller does not have WHITELIST_ROLE',
+    NO_WHITELIST_ADMIN_ROLE: 'Caller does not have WHITELIST_ADMIN_ROLE',
     NO_ADDRESSES_PROVIDED: 'No addresses provided',
     LISTENERS_STARTED: 'Event listeners started using WebSocket provider',
   } as const; 

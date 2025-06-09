@@ -25,7 +25,7 @@ export class ContractService {
 
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000; // 1 second
-  private readonly WHITELIST_ROLE_ID = ethers.id('WHITELIST_ROLE');
+  private readonly WHITELIST_ADMIN_ROLE_ID = ethers.id('WHITELIST_ADMIN_ROLE');
 
   constructor(
     private configService: ConfigService,
@@ -223,7 +223,7 @@ export class ContractService {
       this.logger.log(`Add address to nft contract at ${contractAddress}`);
 
       const isWhitelisted = await this.executeWithRetry(
-        () => this.myNFT.whitelist(address),
+        () => this.myNFT.hasRole(this.myNFT.WHITELISTED_ROLE(), address),
         OPERATIONS.CHECK_WHITELIST_STATUS,
         contractAddress,
       );
@@ -288,7 +288,7 @@ export class ContractService {
 
       try {
         const isWhitelisted = await this.executeWithRetry(
-          () => this.myNFT.whitelist(address),
+          () => this.myNFT.hasRole(this.myNFT.WHITELISTED_ROLE(), address),
           OPERATIONS.CHECK_WHITELIST_STATUS,
           contractAddress,
         );
@@ -338,16 +338,16 @@ export class ContractService {
 
     try {
       const hasRole = await this.myNFT.hasRole(
-        this.WHITELIST_ROLE_ID,
+        this.WHITELIST_ADMIN_ROLE_ID,
         callerAddress,
       );
 
       if (!hasRole) {
-        throw new ForbiddenException(MESSAGES.NO_WHITELIST_ROLE);
+        throw new ForbiddenException(MESSAGES.NO_WHITELIST_ADMIN_ROLE);
       }
     } catch (error) {
       this.logger.error(
-        `Error checking WHITELIST_ROLE for ${callerAddress}: ${error.message}`,
+        `Error checking WHITELIST_ADMIN_ROLE for ${callerAddress}: ${error.message}`,
       );
       throw new ContractOperationError(
         OPERATIONS.CHECK_ROLE,
