@@ -51,6 +51,7 @@ jest.mock('ethers', () => ({
     parseEther: jest.fn((value) => value),
     encodeBytes32String: jest.fn((str) => `0x${str}`),
     id: jest.fn((str) => `id:${str}`),
+    isAddress: jest.fn((address) => /^0x[a-fA-F0-9]{40}$/.test(address)),
   },
 }));
 
@@ -242,7 +243,7 @@ describe('ContractService', () => {
       const result = await service.removeFromWhitelist(mockOwner, '0xInvalid');
       expect(result).toEqual({
         success: true,
-        message: 'No addresses provided'
+        message: 'No addresses provided',
       });
     });
 
@@ -275,14 +276,14 @@ describe('ContractService', () => {
       }
     });
 
-    it('should throw ContractOperationError when contract operation fails after retries', async () => {
+    it('should throw RetryFailedError when contract operation fails after retries', async () => {
       const contractAddress = '0x1234567890123456789012345678901234567890';
       mockContract.getAddress.mockResolvedValue(contractAddress);
       mockContract.setPrices.mockRejectedValue(new Error('Transaction failed'));
 
       await expect(
         service.updateNftPrices(mockOwner, '0.1', '0.2'),
-      ).rejects.toThrow(ContractOperationError);
+      ).rejects.toThrow(RetryFailedError);
     });
   });
 
